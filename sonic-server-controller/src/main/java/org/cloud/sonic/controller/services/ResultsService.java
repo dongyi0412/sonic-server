@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.IService;
 import org.cloud.sonic.controller.models.domain.Results;
 
+import java.util.Date;
 import java.util.List;
 
 /**
@@ -14,11 +15,14 @@ import java.util.List;
  * @date 2021/8/21 16:08
  */
 public interface ResultsService extends IService<Results> {
-    Page<Results> findByProjectId(int projectId, Page<Results> pageable);
+    Page<Results> findByProjectId(int projectId, Page<Results> pageable, String suiteName, String strike,
+                                  Integer status, String startTime, String entTime);
 
     List<Results> findByProjectId(int projectId);
 
     boolean delete(int id);
+
+    boolean batchesDelete(List<Integer> ids);
 
     Results findById(int id);
 

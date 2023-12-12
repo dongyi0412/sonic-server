@@ -48,8 +48,10 @@ import java.util.List;
 @Slf4j
 public class AlertRobotsServiceImpl extends SonicServiceImpl<AlertRobotsMapper, AlertRobots> implements AlertRobotsService {
 
-    @Value("${robot.client.host}")
-    private String clientHost;
+//    @Value("${robot.client.host}")
+    // 前端地址
+    private String clientHost = "http://sonic-web.business.xy";
+
 
     @Autowired
     private RobotFactory robotFactory;

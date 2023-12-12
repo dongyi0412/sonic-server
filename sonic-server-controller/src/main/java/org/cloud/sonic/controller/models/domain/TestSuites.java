@@ -62,6 +62,11 @@ public class TestSuites implements Serializable, TypeConverter<TestSuites, TestS
     @Index(value = "IDX_PROJECT_ID", columns = {"project_id"})
     private Integer projectId;
 
+    @TableField
+    @Column(value = "is_send_status", isNull = false, comment = "")
+    @Index(value = "IS_SEND_STATUS", columns = {"is_send_status"})
+    private Integer isSendStatus;
+
     @TableField(typeHandler = NullableIntArrayTypeHandler.class, updateStrategy = FieldStrategy.IGNORED)
     @Column(value = "alert_robot_ids", type = MySqlTypeConstant.VARCHAR, length = 1024, comment = "项目内测试套件默认通知配置，为null时取项目配置的默认值")
     int[] alertRobotIds;

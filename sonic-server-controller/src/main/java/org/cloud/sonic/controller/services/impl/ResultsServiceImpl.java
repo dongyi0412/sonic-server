@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.text.SimpleDateFormat;
 import java.util.*;
@@ -67,8 +68,14 @@ public class ResultsServiceImpl extends SonicServiceImpl<ResultsMapper, Results>
     private TestCasesService testCasesService;
 
     @Override
-    public Page<Results> findByProjectId(int projectId, Page<Results> pageable) {
+    public Page<Results> findByProjectId(int projectId, Page<Results> pageable, String suiteName, String strike,
+                                                Integer status, String startTime, String entTime) {
         return lambdaQuery().eq(Results::getProjectId, projectId)
+                // 增加测试套件 && 执行用户  && 运行状态 && 创建时间
+                .like(!StringUtils.isEmpty(suiteName), Results::getSuiteName, suiteName)
+                .like(!StringUtils.isEmpty(strike), Results::getStrike, strike)
+                .eq(!StringUtils.isEmpty(status), Results::getStatus, status)
+                .between(!StringUtils.isEmpty(startTime), Results::getCreateTime, startTime, entTime)
                 .orderByDesc(Results::getId)
                 .page(pageable);
     }
@@ -84,6 +91,16 @@ public class ResultsServiceImpl extends SonicServiceImpl<ResultsMapper, Results>
         int count = resultsMapper.deleteById(id);
         resultDetailService.deleteByResultId(id);
         return count > 0;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean batchesDelete(List<Integer> ids) {
+        List<Boolean> booleanList = new ArrayList<>();
+        ids.forEach(id -> {
+            booleanList.add(delete(id));
+        });
+        return !booleanList.isEmpty();
     }
 
     @Override

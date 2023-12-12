@@ -29,9 +29,15 @@ import org.cloud.sonic.common.http.RespEnum;
 import org.cloud.sonic.common.http.RespModel;
 import org.cloud.sonic.controller.models.base.CommentPage;
 import org.cloud.sonic.controller.models.domain.Results;
+import org.cloud.sonic.controller.models.params.BatchesDelete;
 import org.cloud.sonic.controller.services.ResultsService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+import java.util.List;
 
 @Tag(name = "测试结果相关")
 @RestController
@@ -50,11 +56,19 @@ public class ResultsController {
     @GetMapping("/list")
     public RespModel<CommentPage<Results>> findByProjectId(@RequestParam(name = "projectId") int projectId,
                                                            @RequestParam(name = "page") int page,
-                                                           @RequestParam(name = "pageSize") int pageSize) {
+                                                           @RequestParam(name = "pageSize") int pageSize,
+                                                           @RequestParam(name = "suiteName", required = false) String suiteName,
+                                                           @RequestParam(name = "strike", required = false) String strike,
+                                                           @RequestParam(name = "status", required = false) Integer status,
+                                                           @RequestParam(name = "startTime", required = false)String startTime,
+                                                           @RequestParam(name = "endTime", required = false)String endTime) throws ParseException {
+        SimpleDateFormat ft = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
         Page<Results> pageable = new Page<>(page, pageSize);
         return new RespModel<>(
                 RespEnum.SEARCH_OK,
-                CommentPage.convertFrom(resultsService.findByProjectId(projectId, pageable))
+                CommentPage.convertFrom(resultsService.findByProjectId(projectId, pageable, suiteName, strike, status, startTime,
+                        endTime))
         );
     }
 
@@ -69,6 +83,19 @@ public class ResultsController {
             return new RespModel<>(RespEnum.ID_NOT_FOUND);
         }
     }
+
+    @WebAspect
+    @Operation(summary = "批量删除测试结果", description = "删除对应的测试结果id以及测试结果详情")
+    @Parameter(name = "id", description = "测试结果id")
+    @PostMapping("/batchesDelete")
+    public RespModel<String> batchesDelete(@RequestBody BatchesDelete ids) {
+        if (resultsService.batchesDelete(ids.getIds())) {
+            return new RespModel<>(RespEnum.DELETE_OK);
+        } else {
+            return new RespModel<>(RespEnum.ID_NOT_FOUND);
+        }
+    }
+
 
     @WebAspect
     @Operation(summary = "查询测试结果信息", description = "查询对应id的测试结果信息")
