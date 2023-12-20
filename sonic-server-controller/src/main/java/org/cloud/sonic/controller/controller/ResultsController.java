@@ -36,6 +36,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
 import java.util.Date;
 import java.util.List;
 
@@ -139,13 +142,25 @@ public class ResultsController {
     @Parameters(value = {
             @Parameter(name = "projectId", description = "项目id"),
             @Parameter(name = "startTime", description = "起始时间"),
-            @Parameter(name = "endTime", description = "结束时间")
+            @Parameter(name = "endTime", description = "结束时间"),
+            @Parameter(name = "countType", description = "统计类型，testSuit测试套件，testCase测试用例")
     })
     @GetMapping("/chart")
     public RespModel<JSONObject> chart(@RequestParam(name = "projectId") int projectId,
                                        @RequestParam(name = "startTime") String startTime,
-                                       @RequestParam(name = "endTime") String endTime) {
-        return new RespModel<>(RespEnum.SEARCH_OK, resultsService.chart(startTime, endTime, projectId));
+                                       @RequestParam(name = "endTime") String endTime,
+                                       @RequestParam(name = "countType") String countType) {
+
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
+        LocalDateTime start = LocalDateTime.parse(startTime, formatter);
+        LocalDateTime end = LocalDateTime.parse(endTime, formatter);
+        long differenceInDays = ChronoUnit.DAYS.between(start, end);
+        if (differenceInDays > 7 && countType.equals("testCase")){
+            return new RespModel<>(RespEnum.TEST_COUNT_FAIL);
+        }
+
+        return new RespModel<>(RespEnum.SEARCH_OK, resultsService.chart(startTime, endTime, projectId, countType));
     }
 
     @WebAspect

@@ -33,6 +33,7 @@ public enum RespEnum {
     SEARCH_FAIL(3005, "fail.search"),
     UPDATE_FAIL(3004, "fail.update"),
     DELETE_FAIL(3002, "fail.delete"),
+    TEST_COUNT_FAIL(3004, "fail.test.count"),
     UPLOAD_FAIL(3003, "fail.upload"),
     UNAUTHORIZED(1001, "unauthorized"),
     SERVICE_NOT_FOUND(1002, "not.found.service"),

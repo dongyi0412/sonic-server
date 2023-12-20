@@ -20,6 +20,8 @@ public interface ResultsService extends IService<Results> {
 
     List<Results> findByProjectId(int projectId);
 
+    List<Results> findByCreateTime(String startTime, String entTime);
+
     boolean delete(int id);
 
     boolean batchesDelete(List<Integer> ids);
@@ -34,7 +36,7 @@ public interface ResultsService extends IService<Results> {
 
     void subResultCount(int id);
 
-    JSONObject chart(String startTime, String endTime, int projectId);
+    JSONObject chart(String startTime, String endTime, int projectId, String countType);
 
     void sendDayReport();
 

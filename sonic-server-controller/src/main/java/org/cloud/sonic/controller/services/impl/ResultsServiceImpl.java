@@ -17,6 +17,7 @@
  */
 package org.cloud.sonic.controller.services.impl;
 
+import com.alibaba.fastjson.JSON;
 import com.alibaba.fastjson.JSONArray;
 import com.alibaba.fastjson.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
@@ -26,6 +27,8 @@ import org.cloud.sonic.controller.models.domain.Projects;
 import org.cloud.sonic.controller.models.domain.ResultDetail;
 import org.cloud.sonic.controller.models.domain.Results;
 import org.cloud.sonic.controller.models.domain.TestCases;
+import org.cloud.sonic.controller.models.dto.CaseRunCountDTO;
+import org.cloud.sonic.controller.models.dto.CaseStatusDTO;
 import org.cloud.sonic.controller.models.dto.TestSuitesDTO;
 import org.cloud.sonic.controller.models.interfaces.ResultDetailStatus;
 import org.cloud.sonic.controller.models.interfaces.ResultStatus;
@@ -42,6 +45,7 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.stream.Collectors;
 
 /**
  * @author ZhouYiXun
@@ -80,9 +84,14 @@ public class ResultsServiceImpl extends SonicServiceImpl<ResultsMapper, Results>
                 .page(pageable);
     }
 
+
     @Override
     public List<Results> findByProjectId(int projectId) {
         return lambdaQuery().eq(Results::getProjectId, projectId).list();
+    }
+    @Override
+    public List<Results> findByCreateTime(String startTime, String entTime) {
+        return lambdaQuery().between(Results::getCreateTime, startTime, entTime).list();
     }
 
     @Override
@@ -207,7 +216,7 @@ public class ResultsServiceImpl extends SonicServiceImpl<ResultsMapper, Results>
 
     @Transactional
     @Override
-    public JSONObject chart(String startTime, String endTime, int projectId) {
+    public JSONObject chart(String startTime, String endTime, int projectId, String countType) {
         List<String> dateList = getBetweenDate(startTime.substring(0, 10), endTime.substring(0, 10));
         JSONObject result = new JSONObject();
         result.put("case", resultDetailService.findTopCases(startTime, endTime, projectId));
@@ -229,9 +238,53 @@ public class ResultsServiceImpl extends SonicServiceImpl<ResultsMapper, Results>
             rateResult.add(d);
         }
         result.put("pass", rateResult);
-        result.put("status", resultsMapper.findDayStatus(startTime, endTime, projectId));
+
+        if (countType.equals("testCase")){
+            // 用例维度维度
+            result.put("status", caseRunCount(startTime, endTime));
+        }
+        if (countType.equals("testSuit")){
+            // 测试套件维度
+            result.put("status", resultsMapper.findDayStatus(startTime, endTime, projectId));
+        }
         return result;
     }
+
+    /**
+     * 测试用例维度统计数量 根据status分组
+     * @param startTime 开始时间
+     * @param endTime   结束时间
+     * @return   状态&&数量
+     */
+    public List<CaseRunCountDTO> caseRunCount(String startTime, String endTime){
+        List<CaseStatusDTO> findCaseStatus = new ArrayList<>();
+        // 查询时间内测试套件
+        List<Results> byCreateTime = findByCreateTime(startTime, endTime);
+
+        // 查询所有的测试用例集合
+        byCreateTime.forEach(x -> {
+            JSONArray caseStatus = findCaseStatus(x.getId());
+            List<CaseStatusDTO> caseStatusDTO = JSON.parseArray(JSON.toJSONString(caseStatus), CaseStatusDTO.class);
+            findCaseStatus.addAll(caseStatusDTO);
+        });
+
+        // 根据用例状态统计数量
+        Map<Integer, Long> collect = findCaseStatus.stream()
+                .collect(Collectors.groupingBy(CaseStatusDTO::getStatus, Collectors.counting()));
+
+        List<CaseRunCountDTO> collect1 = collect.entrySet().stream()
+                .map(entry -> new CaseRunCountDTO(entry.getKey(), entry.getValue()))
+                .collect(Collectors.toList());
+
+        collect1.forEach(x -> {
+            if(x.getStatus() == 4){
+                x.setStatus(0);
+            }});
+
+        return collect1;
+
+    }
+
 
     @Transactional
     @Override
